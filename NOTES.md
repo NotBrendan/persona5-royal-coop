@@ -47,3 +47,19 @@ Running log. Observations, derivations, guesses and unknowns are kept apart.
 - P5R stores saves in `%APPDATA%\SEGA\P5R\Steam\<steamid64>\savedata` (DATA01..), shared by any copy of the exe. Back them up before tests.
 - **Smoke test passed:** the mod loaded into P5R.exe in 34 ms; image base 0x140000000, size 0x18133000. The game reached its window and kept responding.
 - Launch headless with `Reloaded-II.exe --launch "<test dir>\P5R.exe"`; the launcher exits after injecting, which is expected, not a crash.
+
+## 2026-10-20: phase 2 start (battle hook research)
+
+### Observations
+- In P5R the player already picks every party member's command (Direct Commands), so co-op can work at the **input level**:
+  during a friend's character's turn, block the host's input and feed the friend's input instead. No need to decode commands.
+- p5rpc.inputhook (AnimatedSwine37, GPL-3.0): Reloaded library, `IInputHook` with `OnInput`, `OnInputIntercept` (edit the
+  key list the game sees) and `SendKey(Key)`. Keyboard only, rising-edge only. NuGet `p5rpc.inputhook.interfaces`.
+  https://github.com/AnimatedSwine37/p5rpc.inputhook
+- p5rpc.lib (AnimatedSwine37): flowscript calls + sequence info; signatures updated for P5R 1.0.4 in its 1.0.5 release.
+  https://github.com/AnimatedSwine37/p5rpc.lib
+- No public mod found that exposes "which battle unit is acting now". That is the one thing to reverse engineer.
+
+### Derived
+- Remaining unknown for phase 2: the address/function that says which party member's command menu is open.
+- Licensing: building on inputhook (GPL-3.0) means this mod should be GPL-3.0 compatible.
