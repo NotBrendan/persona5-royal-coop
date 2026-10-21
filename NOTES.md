@@ -63,3 +63,26 @@ Running log. Observations, derivations, guesses and unknowns are kept apart.
 ### Derived
 - Remaining unknown for phase 2: the address/function that says which party member's command menu is open.
 - Licensing: building on inputhook (GPL-3.0) means this mod should be GPL-3.0 compatible.
+
+## 2026-10-20: phase 2 result: acting-unit value found
+
+### Observations (TurnScan, live battle on the owner's PC, P5R 1.0.4.0)
+- Scanned at each party member's command menu: Morgana(3) -> Ann(4) -> Ryuji(2) -> Joker(1) -> Morgana(3).
+  Candidate counts: 11.5M -> ~2,900 -> 2 (4-byte) / 11 (2-byte) -> 1 -> 1.
+- **One u16 matched every step**, in heap memory (address changes per battle/session, so no fixed offset yet).
+  Unit ids confirmed: 1 Joker, 2 Ryuji, 3 Morgana, 4 Ann (the rest of the list is still assumed).
+- Two 4-byte candidates matched 3,4,2 but not Joker's 1: a decoy, not the turn value.
+- Live watch for the rest of the battle: 3,4,2,1,3,4,2. The value **does not change during enemy turns and does
+  not reset when the battle ends** (it stayed at the last party member). It means "last party member given the
+  command menu", not "a party member's menu is open right now".
+- Bytes around it (when value was 3): `... 00 00 80 3F 01 72 [03 00] 04 00 00 00 A0 FC 96 41 01 00 ...`.
+  The u16 right after it was 4 (Ann, next to act) at that moment: possibly a turn queue. Unverified.
+
+### Derived
+- The mod needs a second signal: "the party command menu is open" (or "battle is active"), so friend input
+  is only routed while the menu is actually waiting for input.
+- The address must be reached from something stable: a pointer path from P5R.exe, or a hook on the code that writes it.
+
+### Next
+1. Find the code that writes the value (a hook point gives both signals at once), or a pointer path that survives battles.
+2. Find the "command menu open" / "in battle" signal.

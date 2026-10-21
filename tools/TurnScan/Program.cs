@@ -39,10 +39,56 @@ static class Program
         Console.WriteLine("Unit ids: 1 Joker, 2 Ryuji, 3 Morgana, 4 Ann, 5 Yusuke, 6 Makoto, 7 Haru, 8 Futaba, 9 Akechi, 10 Kasumi");
         Console.WriteLine("At each party member's command menu, type their id and press Enter. 'u' = undo last, 'q' = quit.\n");
 
+        string log = Path.Combine(AppContext.BaseDirectory, "turnscan.log");
+
+        // Non-interactive mode, so an agent can run one step per chat message:
+        //   TurnScan step <id>   (first call scans everything, later calls filter)
+        //   TurnScan reset
+        string state = Path.Combine(AppContext.BaseDirectory, "turnscan.state");
+        if (args.Length > 0)
+        {
+            if (args[0] == "reset") { File.Delete(state); File.Delete(state + ".steps"); Console.WriteLine("state cleared"); return 0; }
+            if (args[0] == "step" && args.Length > 1 && int.TryParse(args[1], out int sid))
+            {
+                var prev = File.Exists(state) ? Load(state) : null;
+                var prevSteps = File.Exists(state + ".steps") ? File.ReadAllText(state + ".steps") : "";
+                var sw1 = Stopwatch.StartNew();
+                var next = prev == null ? FirstScan(h, sid) : Filter(h, prev, sid);
+                Save(state, next);
+                var allSteps = (prevSteps.Length > 0 ? prevSteps + "," : "") + sid;
+                File.WriteAllText(state + ".steps", allSteps);
+                Console.WriteLine($"  scanned in {sw1.ElapsedMilliseconds} ms, ids so far: {allSteps}");
+                Report(next, imgBase, imgEnd, log);
+                return 0;
+            }
+            if (args[0] == "watch" && args.Length > 1)
+            {
+                // TurnScan watch <hexaddr> [seconds]: logs every change of the u16 at addr, plus the bytes around it.
+                ulong wa = Convert.ToUInt64(args[1].Replace("0x", ""), 16);
+                int secs = args.Length > 2 ? int.Parse(args[2]) : 180;
+                var around = new byte[0x40];
+                if (ReadProcessMemory(h, (IntPtr)(long)(wa - 0x20), around, 0x40, out _))
+                    Console.WriteLine($"bytes 0x{wa - 0x20:X}: {Convert.ToHexString(around)}");
+                var cell = new byte[2]; int last = -1; var t = Stopwatch.StartNew();
+                string wlog = Path.Combine(AppContext.BaseDirectory, "turnscan-watch.log");
+                while (t.Elapsed.TotalSeconds < secs)
+                {
+                    int v = ReadProcessMemory(h, (IntPtr)(long)wa, cell, 2, out _) ? BitConverter.ToUInt16(cell, 0) : -2;
+                    if (v != last)
+                    {
+                        var msg = $"{DateTime.Now:HH:mm:ss.fff} value={(v == -2 ? "unreadable" : v.ToString())}";
+                        Console.WriteLine(msg); File.AppendAllText(wlog, msg + Environment.NewLine); last = v;
+                    }
+                    Thread.Sleep(20);
+                }
+                return 0;
+            }
+            Console.WriteLine("usage: TurnScan [step <id> | reset | watch <hexaddr> [seconds]]"); return 1;
+        }
+
         var cands = new Dictionary<int, List<ulong>>();
         var history = new List<Dictionary<int, List<ulong>>>();
         var steps = new List<int>();
-        string log = Path.Combine(AppContext.BaseDirectory, "turnscan.log");
 
         while (true)
         {
@@ -124,6 +170,28 @@ static class Program
             res[w] = keep;
         }
         return res;
+    }
+
+    static void Save(string path, Dictionary<int, List<ulong>> c)
+    {
+        using var bw = new BinaryWriter(File.Create(path));
+        bw.Write(c.Count);
+        foreach (var (w, l) in c) { bw.Write(w); bw.Write(l.Count); foreach (var a in l) bw.Write(a); }
+    }
+
+    static Dictionary<int, List<ulong>> Load(string path)
+    {
+        using var br = new BinaryReader(File.OpenRead(path));
+        var c = new Dictionary<int, List<ulong>>();
+        int n = br.ReadInt32();
+        for (int k = 0; k < n; k++)
+        {
+            int w = br.ReadInt32(), cnt = br.ReadInt32();
+            var l = new List<ulong>(cnt);
+            for (int i = 0; i < cnt; i++) l.Add(br.ReadUInt64());
+            c[w] = l;
+        }
+        return c;
     }
 
     static void Report(Dictionary<int, List<ulong>> cands, ulong imgBase, ulong imgEnd, string? log)
