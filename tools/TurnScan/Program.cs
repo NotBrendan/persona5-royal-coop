@@ -1,4 +1,4 @@
-// TurnScan: finds where P5R stores "which party member is acting" by intersecting memory snapshots.
+﻿// TurnScan: finds where P5R stores "which party member is acting" by intersecting memory snapshots.
 // Read-only: opens P5R with PROCESS_VM_READ | PROCESS_QUERY_INFORMATION and never writes.
 // Usage: run while P5R is open, then at each party member's command menu type that character's unit id.
 using System.Diagnostics;
@@ -69,16 +69,28 @@ static class Program
                 var around = new byte[0x40];
                 if (ReadProcessMemory(h, (IntPtr)(long)(wa - 0x20), around, 0x40, out _))
                     Console.WriteLine($"bytes 0x{wa - 0x20:X}: {Convert.ToHexString(around)}");
-                var cell = new byte[2]; int last = -1; var t = Stopwatch.StartNew();
+                // Watch a window around the value and log every changed byte, to spot neighbouring
+                // fields that flip when the command menu opens/closes or the battle ends.
+                const int before = 0x100, len = 0x300;
+                ulong ws = wa - before;
+                var cur = new byte[len]; byte[]? prevWin = null; var t = Stopwatch.StartNew();
                 string wlog = Path.Combine(AppContext.BaseDirectory, "turnscan-watch.log");
                 while (t.Elapsed.TotalSeconds < secs)
                 {
-                    int v = ReadProcessMemory(h, (IntPtr)(long)wa, cell, 2, out _) ? BitConverter.ToUInt16(cell, 0) : -2;
-                    if (v != last)
+                    bool okRead = ReadProcessMemory(h, (IntPtr)(long)ws, cur, len, out _);
+                    if (!okRead) { if (prevWin != null) { Log(wlog, $"{DateTime.Now:HH:mm:ss.fff} window unreadable"); prevWin = null; } Thread.Sleep(20); continue; }
+                    if (prevWin == null) Log(wlog, $"{DateTime.Now:HH:mm:ss.fff} start value={BitConverter.ToUInt16(cur, before)}");
+                    else
                     {
-                        var msg = $"{DateTime.Now:HH:mm:ss.fff} value={(v == -2 ? "unreadable" : v.ToString())}";
-                        Console.WriteLine(msg); File.AppendAllText(wlog, msg + Environment.NewLine); last = v;
+                        var diffs = new List<string>();
+                        for (int i = 0; i < len; i++)
+                            if (cur[i] != prevWin[i]) diffs.Add($"{i - before:+0x0;-0x0}:{prevWin[i]:X2}->{cur[i]:X2}");
+                        // Skip windows where many bytes churn every frame (timers); still show the turn value itself.
+                        if (diffs.Count > 0)
+                            Log(wlog, $"{DateTime.Now:HH:mm:ss.fff} value={BitConverter.ToUInt16(cur, before)} " +
+                                      (diffs.Count > 24 ? $"{diffs.Count} bytes changed" : string.Join(" ", diffs)));
                     }
+                    prevWin = (byte[])cur.Clone();
                     Thread.Sleep(20);
                 }
                 return 0;
@@ -138,8 +150,14 @@ static class Program
             for (ulong off = 0; off < size; off += chunk)
             {
                 int n = (int)Math.Min((ulong)chunk, size - off);
-                if (!ReadProcessMemory(h, (IntPtr)(long)(start + off), buf, n, out var got)) continue;
-                n = (int)got;
+                // A 1 MB read fails as a whole if any page in it is gone; fall back to page-by-page so nothing is skipped.
+                if (!ReadProcessMemory(h, (IntPtr)(long)(start + off), buf, n, out var got) || (int)got < n)
+                {
+                    var pg = new byte[4096];
+                    for (int po = 0; po < n; po += 4096)
+                        if (ReadProcessMemory(h, (IntPtr)(long)(start + off + (ulong)po), pg, 4096, out _)) Buffer.BlockCopy(pg, 0, buf, po, 4096);
+                        else Array.Clear(buf, po, 4096);
+                }
                 for (int i = 0; i + 4 <= n; i += 4) if (BitConverter.ToInt32(buf, i) == id) res[4].Add(start + off + (ulong)i);
                 for (int i = 0; i + 2 <= n; i += 2) if (BitConverter.ToUInt16(buf, i) == id) res[2].Add(start + off + (ulong)i);
                 // Byte candidates explode for small ids; cap at 30M (~240 MB) so the scanner stays bounded.
@@ -171,6 +189,8 @@ static class Program
         }
         return res;
     }
+
+    static void Log(string path, string msg) { Console.WriteLine(msg); File.AppendAllText(path, msg + Environment.NewLine); }
 
     static void Save(string path, Dictionary<int, List<ulong>> c)
     {

@@ -86,3 +86,26 @@ Running log. Observations, derivations, guesses and unknowns are kept apart.
 ### Next
 1. Find the code that writes the value (a hook point gives both signals at once), or a pointer path that survives battles.
 2. Find the "command menu open" / "in battle" signal.
+
+## 2026-10-20: battle 2 (same game session)
+
+### Observations
+- The turn value is **per battle**: battle 2 had a new copy at a different heap address. Battle 1's copy stayed readable
+  with stale data (still 2), which briefly looked like a match. Do not reuse addresses across battles.
+- Both copies sit in the same structure; bytes around the u16 (value marked [..]):
+  `B0 83 E8 34 42 00 00 00 | 04 00 00 00 | 00 00 80 3F 01 02 [04 00] 06 00 00 00 A0 FC 96 41 01 00 00 00`.
+  The leading 8 bytes look like a heap pointer; `00 00 80 3F` is float 1.0.
+- TurnScan bug fixed: a 1 MB read failed as a whole when any page in it was unreadable, so the first scan of
+  battle 2 missed the real copy. It now falls back to page-by-page reads.
+- On a "1 More" (Ryuji again after hitting a weakness) the value stayed 2.
+- Live watch around the value (offsets in decimal from the u16):
+  - A byte at -10 went 04 -> 00 after Ann's guard, 00 -> 01 when the value became Ryuji's 2, then 01 -> 02 -> 04 -> 00
+    about 4 s later, while Ryuji's menu was (per the owner) open afterwards with that byte at 0. Meaning unclear;
+    **not** a plain "menu open" flag. The pointer at -18 is set/cleared together with it.
+  - Bytes +474 and +510 toggle 0/1 around animations (attack, guard, enemy hit); +478..+505 are animated floats.
+  - Nothing in -256..+512 changed when Ryuji's command was confirmed except the animation fields.
+
+### Derived
+- Watching nearby bytes is a slow way to find "menu waiting for input". Better next step: find the **code that writes
+  the turn value** (hardware data breakpoint from inside the mod, logging RIP). That function is where the game
+  opens a party member's command menu, so hooking it gives "turn started for unit N" directly, with no address hunting.
