@@ -1,4 +1,4 @@
-# Persona 5 Royal co-op
+﻿# Persona 5 Royal co-op
 
 **Battle co-op for Persona 5 Royal (PC).** The host plays the game; each friend takes control of
 one party member and picks that character's commands in battle (attack, skill, Persona, item, guard).
@@ -11,7 +11,7 @@ This repo contains no game files.
 | | |
 |---|---|
 | Game version | Steam, P5R.exe 1.0.4.0 (build 15515071) |
-| Stage | Research done; toolchain setup next |
+| Stage | Phase 1 done (mod loads in-game); phase 2 (find the battle hook) next |
 | QA level | none (nothing tested yet) |
 
 ## Plan
@@ -27,3 +27,4 @@ This repo contains no game files.
   around the overworld. It does not cover battles.
 
 Research log: [NOTES.md](NOTES.md).
+
