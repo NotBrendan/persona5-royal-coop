@@ -109,3 +109,4 @@ Running log. Observations, derivations, guesses and unknowns are kept apart.
 - Watching nearby bytes is a slow way to find "menu waiting for input". Better next step: find the **code that writes
   the turn value** (hardware data breakpoint from inside the mod, logging RIP). That function is where the game
   opens a party member's command menu, so hooking it gives "turn started for unit N" directly, with no address hunting.
+- Confirmed in battle 2: after the enemy's move the value switched 2 -> 1 the moment Joker's turn came up (22:08:30), and the -10 byte / -18 pointer cleared 250 ms later, the same pattern as after Ann's guard. Working guess: -18/-10 describe the action currently being executed (party or enemy), cleared when it finishes.
