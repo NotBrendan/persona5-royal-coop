@@ -27,6 +27,10 @@ Running log. Observations, derivations, guesses and unknowns are kept apart.
 - Overworld presence exists (p5r.multiplayer). **Nobody syncs battles, story, calendar or Palaces.**
 - Turn-based battles are cheap to sync: send the chosen command per turn, not positions every frame.
 
+### Decision (owner, 2026-10-20)
+- Goal is **battle co-op**: host runs the game; each friend picks the commands for one party member.
+  Outside battle, friends watch through a stream / Steam Remote Play. Overworld sync is out of scope for now.
+
 ### Unknown
 - p5r.multiplayer's license, last commit date, and whether it builds against 1.0.4.0.
 - Whether the battle system exposes a hook point for "who picks this party member's command".
