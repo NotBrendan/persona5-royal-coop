@@ -1,0 +1,21 @@
+{
+  "ModId": "p5rcoop.battle",
+  "ModName": "P5R Battle Co-op",
+  "ModAuthor": "NotBrendan",
+  "ModVersion": "1.0.0",
+  "ModDescription": "Friends control party members in battle (WIP)",
+  "ModDll": "p5rcoop.battle.dll",
+  "ModIcon": "Preview.png",
+  "ModR2RManagedDll32": "x86/p5rcoop.battle.dll",
+  "ModR2RManagedDll64": "x64/p5rcoop.battle.dll",
+  "ModNativeDll32": "",
+  "ModNativeDll64": "",
+  "IsLibrary": false,
+  "ReleaseMetadataFileName": "p5rcoop.battle.ReleaseMetadata.json",
+  "PluginData": {},
+  "IsUniversalMod": false,
+  "ModDependencies": [ "reloaded.sharedlib.hooks" ],
+  "OptionalDependencies": [],
+  "SupportedAppId": [],
+  "ProjectUrl": ""
+}
