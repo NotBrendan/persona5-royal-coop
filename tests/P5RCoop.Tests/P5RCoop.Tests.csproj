@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- The mod's Net/ folder is gated behind this symbol; see docs/NETWORKING.md. -->
+    <DefineConstants>$(DefineConstants);P5RCOOP_NET</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!-- Used to check KeyCodes against the real Key enum and to compile InputHookSink. LGPL-3.0-or-later. -->
+    <PackageReference Include="p5rpc.inputhook.interfaces" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\P5RCoop.Protocol\P5RCoop.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\P5RCoop.Relay\P5RCoop.Relay.csproj" />
+    <ProjectReference Include="..\..\src\P5RCoop.Friend\P5RCoop.Friend.csproj" />
+  </ItemGroup>
+
+  <!-- The host-side code lives in the Windows mod project; compile its Net/ sources here so it runs on Linux. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\p5rcoop.battle\Net\**\*.cs" Link="ModNet\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

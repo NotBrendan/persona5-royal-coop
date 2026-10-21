@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compiles src/p5rcoop.battle/Net/ for net8.0-windows with the same language settings as the mod
+    (LangVersion 12, nullable, implicit usings) and the same dependencies the wiring adds, so a Linux CI
+    proves the mod-side files build for the mod's target. Produces nothing that ships.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <RootNamespace>p5rcoop.battle</RootNamespace>
+    <DefineConstants>$(DefineConstants);P5RCOOP_NET</DefineConstants>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="p5rpc.inputhook.interfaces" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\P5RCoop.Protocol\P5RCoop.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\p5rcoop.battle\Net\**\*.cs" Link="Net\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

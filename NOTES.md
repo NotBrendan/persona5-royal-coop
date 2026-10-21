@@ -63,3 +63,22 @@ Running log. Observations, derivations, guesses and unknowns are kept apart.
 ### Derived
 - Remaining unknown for phase 2: the address/function that says which party member's command menu is open.
 - Licensing: building on inputhook (GPL-3.0) means this mod should be GPL-3.0 compatible.
+
+## 2026-10-21: networking side (cloud session, no game)
+
+### Observations
+- p5rpc.inputhook source (commit 1e2e04e): `SendKey` queues keys that are appended to the **next** poll; a poll with
+  no host keys and nothing queued never runs the intercept; intercept handlers run in subscription order and
+  `OnInput` runs after them (on a Task). `p5rpc.inputhook.interfaces` 1.0.0 is LGPL-3.0-or-later; the mod is GPL-3.0.
+- Key enum values copied into `P5RCoop.Protocol.KeyCodes`; a test checks them against the package by reflection.
+- `src/p5rcoop.battle/Net/` compiles for net8.0-windows on Linux (`EnableWindowsTargeting`). The full mod also
+  builds on Linux with `RELOADEDIIMODS` set and `-p:EnableWindowsTargeting=true`, with and without the wiring.
+
+### Derived
+- Host session design: friend turn = drop host keys, inject that friend's keys (ordered, de-duplicated by sequence);
+  anything else = host keys pass. Details and wiring steps: docs/NETWORKING.md.
+- `SendKey` from the network thread can race inputhook's unsynchronised queue. Rare at human key rates; fix if seen.
+
+### Unknown
+- The turn source still needs the "which party member's command menu is open" address (local session).
+- Whether P5R's battle menu ever reads keys outside the rising-edge path inputhook covers (held keys, controller).

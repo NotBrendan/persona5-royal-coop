@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Stand-in for the game: runs the mod's HostSession with a typed-in turn source and a fake input hook. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DefineConstants>$(DefineConstants);P5RCOOP_NET</DefineConstants>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\P5RCoop.Protocol\P5RCoop.Protocol.csproj" />
+  </ItemGroup>
+
+  <!-- InputHookSink needs the real inputhook package and is not used here. -->
+  <ItemGroup>
+    <Compile Include="..\..\src\p5rcoop.battle\Net\**\*.cs" Exclude="..\..\src\p5rcoop.battle\Net\InputHookSink.cs" Link="ModNet\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>
